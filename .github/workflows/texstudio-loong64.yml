@@ -27,6 +27,7 @@ jobs:
             apt install -y \
               build-essential cmake git python3-pip make \
               qtbase5-dev libqt5svg5-dev qtdeclarative5-dev qttools5-dev libqt5svg5-dev libpoppler-qt5-dev libpoppler-cpp-dev pkg-config zlib1g-dev libquazip5-dev
+            git config --global --add safe.directory /workspace
             mkdir build && cd build
             cmake -DCMAKE_INSTALL_PREFIX=./build/appdir/usr .. -Wno-dev
             cmake --build . --target install -- -j 8
