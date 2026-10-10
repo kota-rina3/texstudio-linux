@@ -4330,24 +4330,25 @@ void Texstudio::editEraseWordCmdEnv()
             } else {
                 currentEditorView()->editor->document()->beginMacro();
                 cursor.select(QDocumentCursor::WordOrCommandUnderCursor);
-                cursor.removeSelectedText();
+                QDocumentCursor cursorCommand=cursor;
+                //cursor.removeSelectedText();
                 // remove curly brakets as well
                 if (cursor.nextChar() == QChar('{')) {
-                    cursor.movePosition(1); // move position to end of opening bracket
+                    //cursor.movePosition(1); // move position to end of opening bracket
                     QDocumentCursor orig, to;
                     cursor.getMatchingPair(orig, to, false);
                     if (orig.isValid() && to.isValid()){
                         if(to>orig){
                             to.removeSelectedText();
                             orig.removeSelectedText();
-                            cursor.moveTo(orig);
                         }else{
                             orig.removeSelectedText();
                             to.removeSelectedText();
-                            cursor.moveTo(to);
                         }
                     }
                 }
+                cursorCommand.removeSelectedText();
+                cursor.moveTo(cursorCommand);
                 currentEditorView()->editor->document()->endMacro();
             }
             handled=true;
@@ -6499,6 +6500,28 @@ bool Texstudio::runCommandAsync(const QString &commandline, const char * returnC
     }
     return true;
 }
+/*!
+ * \brief call from pdf viewer
+ * Allow disabling compile/quick buttons when a command is running.
+ * \param unparsedCommandLine
+ * \param mainFile
+ * \param currentFile
+ * \param currentLine
+ * \param buffer
+ * \param errorMsg
+ * \param returnObj
+ * \param returnCmd
+ * \return
+ */
+bool Texstudio::runCommandAsyncFwd(const QString &unparsedCommandLine, const QFileInfo &mainFile, const QFileInfo &currentFile, int currentLine, QString *buffer, QString *errorMsg, QObject *returnObj, const char *returnCmd)
+{
+    // disable buttons
+    if(unparsedCommandLine==BuildManager::CMD_COMPILE || unparsedCommandLine== BuildManager::CMD_QUICK){
+        setBuildButtonsDisabled(true);
+    }
+    // call buildmanager
+    return buildManager.runCommandAsync(unparsedCommandLine, mainFile, currentFile, currentLine, buffer, errorMsg, returnObj, returnCmd);
+}
 
 void Texstudio::runInternalPdfViewer(const QFileInfo &master, const QString &options)
 {
@@ -7629,7 +7652,6 @@ void Texstudio::texdocHelp()
 		packages.removeDuplicates();
 		packages.removeAll("latex-209");
 		packages.removeAll("latex-dev");
-		packages.removeAll("latex-l2tabu");
 		packages.removeAll("latex-document");
 		packages.removeAll("tex");
 	}
@@ -8532,7 +8554,7 @@ QObject *Texstudio::newPdfPreviewer(bool embedded)
     connect(pdfviewerWindow, SIGNAL(syncSource(const QString&,int,bool,QString)), SLOT(syncFromViewer(const QString&,int,bool,QString)));
 	connect(pdfviewerWindow, SIGNAL(focusEditor()), SLOT(focusEditor()));
     connect(pdfviewerWindow, SIGNAL(runCommand(const QString&,const QFileInfo&,const QFileInfo&,int)), &buildManager, SLOT(runCommand(const QString&,const QFileInfo&,const QFileInfo&,int)));
-    connect(pdfviewerWindow, SIGNAL(runCommandAsync(const QString&,const QFileInfo&,const QFileInfo&,int)), &buildManager, SLOT(runCommandAsync(const QString&,const QFileInfo&,const QFileInfo&,int)));
+    connect(pdfviewerWindow, SIGNAL(runCommandAsync(const QString&,const QFileInfo&,const QFileInfo&,int)), this, SLOT(runCommandAsyncFwd(const QString&,const QFileInfo&,const QFileInfo&,int)));
 	connect(pdfviewerWindow, SIGNAL(triggeredClone()), SLOT(newPdfPreviewer()));
 
 	PDFDocument *from = qobject_cast<PDFDocument *>(sender());
