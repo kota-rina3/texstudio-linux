@@ -675,7 +675,7 @@ ProcessX * scriptengine::system(const QString &commandline, const QString &worki
     QMetaObject::invokeMethod(reinterpret_cast<QObject *>(app), "connectSubCommand", Q_ARG(ProcessX *, p), Q_ARG(bool, true));
     if (!workingDirectory.isEmpty())
         p->setWorkingDirectory(workingDirectory);
-    QString *buffer=new QString;
+    QSharedPointer<QString> buffer=QSharedPointer<QString>(new QString);
     p->setStdoutBuffer(buffer);
     p->startCommand();
     p->waitForStarted();
@@ -815,9 +815,8 @@ void scriptengine::registerAsBackgroundScript(const QString &name)
 
 bool scriptengine::setTimeout(const QString &fun,const int timeout)
 {
-    QTimer *tm=new QTimer();
     QStringList parts=fun.split(" ");
-    tm->singleShot(timeout,this,std::bind(&scriptengine::runTimed,this,parts.value(1)));
+    QTimer::singleShot(timeout,this,std::bind(&scriptengine::runTimed,this,parts.value(1)));
 
     return true;
 }
